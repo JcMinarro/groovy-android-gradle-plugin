@@ -15,7 +15,8 @@
  */
 package groovyx.functional
 
-import static groovyx.internal.TestProperties.androidPluginVersion
+import spock.lang.Unroll
+
 import static groovyx.internal.TestProperties.buildToolsVersion
 import static groovyx.internal.TestProperties.compileSdkVersion
 
@@ -25,20 +26,22 @@ import static groovyx.internal.TestProperties.compileSdkVersion
  */
 class KotlinSupportSpec extends FunctionalSpec {
 
-  def "should compile with kotlin dependencies"() {
+  @Unroll
+  def "should compile with kotlin dependencies with kotlin version: #kotlinVersion, android plugin:#androidPluginVersion and gradle version:#gradleVersion"() {
     given:
     file("settings.gradle") << "rootProject.name = 'test-app'"
 
     buildFile << """
       buildscript {
         repositories {
-          maven { url "${localRepo.toURI()}" }
+          maven { url "${localRepo.toURI()}" }    
+          $googleMavenRepo
           jcenter()
         }
         dependencies {
           classpath 'com.android.tools.build:gradle:$androidPluginVersion'
           classpath 'org.codehaus.groovy:groovy-android-gradle-plugin:$PLUGIN_VERSION'
-          classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.1.2'
+          classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion'
         }
       }
 
@@ -47,6 +50,7 @@ class KotlinSupportSpec extends FunctionalSpec {
       apply plugin: 'groovyx.android'
 
       repositories {
+        $googleMavenRepo
         jcenter()
       }
 
@@ -78,7 +82,7 @@ class KotlinSupportSpec extends FunctionalSpec {
 
       dependencies {
         compile 'org.codehaus.groovy:groovy:2.4.11:grooid'
-        compile 'org.jetbrains.kotlin:kotlin-stdlib-jre7:1.1.2'
+        compile 'org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlinVersion'
 
         androidTestCompile 'com.android.support.test:runner:0.5'
         androidTestCompile 'com.android.support.test:rules:0.5'
@@ -190,7 +194,7 @@ class KotlinSupportSpec extends FunctionalSpec {
     """
 
     when:
-    run 'assemble', 'test'
+    runWithVersion gradleVersion, 'assemble', 'test'
 
     then:
     noExceptionThrown()
@@ -200,5 +204,39 @@ class KotlinSupportSpec extends FunctionalSpec {
     file('build/intermediates/classes/androidTest/debug/groovyx/test/AndroidTest.class').exists()
     file('build/intermediates/classes/test/debug/groovyx/test/JvmTest.class').exists()
     file('build/intermediates/classes/test/release/groovyx/test/JvmTest.class').exists()
+
+    where:
+    // test common configs that touches the different way to access the classpath
+    kotlinVersion | androidPluginVersion | gradleVersion | googleMavenRepo
+    '1.1.2'       | '1.5.0'              | '2.10'        | "maven { 'https://maven.google.com' }"
+    '1.1.51'      | '1.5.0'              | '2.10'        | "maven { 'https://maven.google.com' }"
+    '1.1.2'       | '1.5.0'              | '2.11'        | "maven { 'https://maven.google.com' }"
+    '1.1.51'      | '1.5.0'              | '2.11'        | "maven { 'https://maven.google.com' }"
+    '1.1.2'       | '1.5.0'              | '2.12'        | "maven { 'https://maven.google.com' }"
+    '1.1.51'      | '1.5.0'              | '2.12'        | "maven { 'https://maven.google.com' }"
+    '1.1.2'       | '2.0.0'              | '2.13'        | "maven { 'https://maven.google.com' }"
+    '1.1.51'      | '2.0.0'              | '2.13'        | "maven { 'https://maven.google.com' }"
+    '1.1.2'       | '2.1.2'              | '2.14'        | "maven { 'https://maven.google.com' }"
+    '1.1.51'      | '2.1.2'              | '2.14'        | "maven { 'https://maven.google.com' }"
+    '1.1.2'       | '2.2.0'              | '2.14.1'      | "maven { 'https://maven.google.com' }"
+    '1.1.51'      | '2.2.0'              | '2.14.1'      | "maven { 'https://maven.google.com' }"
+    '1.1.2'       | '2.2.0'              | '3.0'         | "maven { 'https://maven.google.com' }"
+    '1.1.51'      | '2.2.0'              | '3.0'         | "maven { 'https://maven.google.com' }"
+    '1.1.2'       | '2.2.0'              | '3.1'         | "maven { 'https://maven.google.com' }"
+    '1.1.51'      | '2.2.0'              | '3.1'         | "maven { 'https://maven.google.com' }"
+    '1.1.2'       | '2.2.3'              | '3.2'         | "maven { 'https://maven.google.com' }"
+    '1.1.51'      | '2.2.3'              | '3.2'         | "maven { 'https://maven.google.com' }"
+    '1.1.2'       | '2.3.0'              | '3.3'         | "maven { 'https://maven.google.com' }"
+    '1.1.51'      | '2.3.0'              | '3.3'         | "maven { 'https://maven.google.com' }"
+    '1.1.2'       | '2.3.0'              | '3.4'         | "maven { 'https://maven.google.com' }"
+    '1.1.51'      | '2.3.0'              | '3.4'         | "maven { 'https://maven.google.com' }"
+    '1.1.2'       | '2.3.1'              | '3.5'         | "maven { 'https://maven.google.com' }"
+    '1.1.51'      | '2.3.1'              | '3.5'         | "maven { 'https://maven.google.com' }"
+    '1.1.2'       | '2.3.2'              | '3.5'         | "maven { 'https://maven.google.com' }"
+    '1.1.51'      | '2.3.2'              | '3.5'         | "maven { 'https://maven.google.com' }"
+    '1.1.2'       | '2.3.3'              | '4.2'         | "google()"
+    '1.1.51'      | '2.3.3'              | '4.2'         | "google()"
+    '1.1.2'       | '3.0.0-rc1'          | '4.2'         | "google()"
+    '1.1.51'      | '3.0.0-rc1'          | '4.2'         | "google()"
   }
 }
